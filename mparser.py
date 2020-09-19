@@ -5,22 +5,41 @@ class note:
     F_3 = 66
     F_5 = 90
     F_7 = 114
-    def __init__(self, note, duration, start, volume=100):
+    def __init__(self, note, duration, start, volume = 100, track = 1):
         self.note = note
         self.duration = duration
         self.start = start
         self.volume = volume
+        self.track = track
 
     def __str__(self):
         return "NOTE {} DUR {} STR {}".format(self.note, self.duration, self.start)
 
     def toMCNote(self, offset = 0):
         if self.F_1 - offset <= self.note and self.note <= self.F_3 - offset:
-            return (self.note - (42 - offset), 0, self.volume)   #minecraft:block.note_block.bass
+            '''
+            if(self.track % 2 == 1):
+                return (self.note - (42 - offset), 0, self.volume)   #minecraft:block.note_block.bass
+            else:
+                return (self.note - (42 - offset), 1, self.volume)   #minecraft:block.note_block.didgeridoo
+            '''
+            return (self.note - (42 - offset), 0, self.volume)
         if self.F_3 - offset <= self.note and self.note <= self.F_5 - offset:
-            return (self.note - (66 - offset), 7, self.volume)   #minecraft:block.note_block.harp
+            '''
+            if(self.track % 2 == 1):
+                return (self.note - (66 - offset), 7, self.volume)   #minecraft:block.note_block.harp
+            else:
+                return (self.note - (66 - offset), 3, self.volume)   #minecraft:block.note_block.iron_xylophone
+            '''
+            return (self.note - (66 - offset), 7, self.volume)
         if self.F_5 - offset <= self.note and self.note <= self.F_7 - offset:
-            return (self.note - (90 - offset), 12, self.volume)  #minecraft:block.note_block.chime
+            '''
+            if(self.track % 2 == 1):
+                return (self.note - (90 - offset), 12, self.volume)  #minecraft:block.note_block.chime
+            else:
+                return (self.note - (90 - offset), 13, self.volume)  #minecraft:block.note_block.xylophone
+            '''
+            return (self.note - (90 - offset), 12, self.volume)
 
         if(self.note + offset <= self.F_1):
             return (0,0,self.volume)
@@ -29,25 +48,28 @@ class note:
         
         raise ValueError("Unexpected value of note : {0}({1} modified)".format(self.note, self.note + offset))
 
-def GetAccTime(tick, tempoList):
+def GetAccTime(tick, tempoList, tpb):
     ret = 0
     i = 0
     while(i <= len(tempoList) - 1):
         tempo = tempoList[i]
         if(i == len(tempoList) - 1 or tempoList[i+1][1] > tick):
-            ret = ret + (tick - tempoList[i][1]) * tempoList[i][0]
+            #ret = ret + (tick - tempoList[i][1]) * tempoList[i][0]
+            ret += mido.tick2second(tick - tempoList[i][1], tpb, tempoList[i][0])
             #print(ret, tick, tempoList[i][1], tempoList[i][0])
             break
-        ret = ret + (tempoList[i + 1][1] - tempoList[i][1]) * tempoList[i][0]
+        #ret = ret + (tempoList[i + 1][1] - tempoList[i][1]) * tempoList[i][0]
+        ret += mido.tick2second(tempoList[i+1][1] - tempoList[i][1], tpb, tempoList[i][0])
         i = i + 1
     #print("Time(", tick,"):", ret)
     return ret
 
-def finishNote(currentTime, dic, notes, tps, volume):
+def finishNote(currentTime, dic, notes, tempoList, volume, track, tpb):
     nt = dic["note"]
-    tim = GetAccTime(notes[nt][0], tps)
-    result = note(nt, GetAccTime(currentTime,tps) - tim, tim, (notes[nt][1] / 127) * (volume / 127) * 100)
+    tim = GetAccTime(notes[nt][0], tempoList, tpb)
+    result = note(nt, GetAccTime(currentTime, tempoList, tpb) - tim, tim, (notes[nt][1] / 127) * (volume / 127) * 100, track)
     notes[nt] = (0,0)
+    #print("note begins at", tim, "ends at", currentTime)
     return result
     
 
@@ -57,21 +79,25 @@ def LoadMidiFile(fileName):
         for i, track in enumerate(midifile.tracks):
             print("Track {}:{}".format(i, track))
         
-        tps = []
+        tempoList = []
         for tk in midifile.tracks:
             currentTime = 0
             for msg in tk:
-                #print(msg)
                 if msg.is_meta:
+                    print(msg)
                     if msg.dict()["type"] == "set_tempo":
                         dic = msg.dict()
                         currentTime = currentTime + dic["time"]
-                        _tps = mido.tick2second(1, midifile.ticks_per_beat, dic['tempo'])
-                        tps.append((_tps, currentTime))
+                        #_tps = mido.tick2second(1, midifile.ticks_per_beat, dic['tempo'])
+                        tempoList.append((dic['tempo'], currentTime))
+        if(len(tempoList) <= 0):
+            raise ValueError("This MIDI file does not designate tempo")
                 
         
         parsedNotes = []
+        trackcounter = 0
         for track in midifile.tracks:
+            trackcounter = trackcounter + 1
             print(track, ":")
             percussion = False
             volume = 127
@@ -81,22 +107,23 @@ def LoadMidiFile(fileName):
                 notes.append((0,0))
                 
             for msg in track:
-                #print(msg)
-                if not msg.is_meta:
-                    dic = msg.dict()
-                    if dic["type"] == "note_on" and dic["velocity"] > 0:
-                        currentTime = currentTime + dic["time"]
-                        if(notes[dic["note"]] != (0, 0)):
-                            parsedNotes.append(finishNote(currentTime, dic, notes, tps, volume))
-                            notes[dic["note"]] = (0, 0)
-                        notes[dic["note"]] = (currentTime, dic["velocity"])
-                        #noteCnt[dic["note"]] = noteCnt[dic["note"]] + 1
+                #print(msg, "current time:", currentTime)
+                dic = msg.dict()
+                if dic["type"] == "note_on" and dic["velocity"] > 0:
+                    currentTime = currentTime + dic["time"]
+                    if(notes[dic["note"]] != (0, 0)):
+                        parsedNotes.append(finishNote(currentTime, dic, notes, tempoList, volume, trackcounter, midifile.ticks_per_beat))
+                        notes[dic["note"]] = (0, 0)
+                    notes[dic["note"]] = (currentTime, dic["velocity"])
+                    #noteCnt[dic["note"]] = noteCnt[dic["note"]] + 1
                         
-                    elif dic["type"] == "note_off" or (dic["type"] == "note_on" and dic["velocity"] == 0):
+                elif dic["type"] == "note_off" or (dic["type"] == "note_on" and dic["velocity"] == 0):
+                    currentTime = currentTime + dic["time"]
+                    parsedNotes.append(finishNote(currentTime, dic, notes, tempoList, volume, trackcounter, midifile.ticks_per_beat))
+                else:
+                    if "time" in dic:
                         currentTime = currentTime + dic["time"]
-                        parsedNotes.append(finishNote(currentTime, dic, notes, tps, volume))
-                        
-                    elif dic["type"] == "control_change":
+                    if dic["type"] == "control_change":
                         if(dic["control"] == 7):            # volume
                             volume = dic["value"]
                     else:

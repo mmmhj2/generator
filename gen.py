@@ -183,7 +183,7 @@ class Generator:
         
 
 if __name__ == "__main__":
-    notelist = LoadMidiFile("If_There_Is_War_Tomorrow____.mid")
+    notelist = LoadMidiFile("Only_my_Railgun_-_Animenz_Piano_Sheets.mid")
 
     #if(access("datapack", F_OK)):
     #    rmtree("datapack")
@@ -214,7 +214,7 @@ if __name__ == "__main__":
     if(not access("functions", F_OK)):
         mkdir("functions")
     chdir("functions")
-    g = Generator("itwt")
+    g = Generator("omr")
 
     g.writeInitFunc()
     g.generateTickingFunction()
