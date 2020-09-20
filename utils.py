@@ -1,3 +1,5 @@
+from decimal import Decimal, ROUND_HALF_UP
+
 def ConvertTick(sec):
     return sec / 0.05
 
@@ -69,5 +71,8 @@ def RotateCounterclockwise(facing):
     raise ValueError('"facing" must be "south", "north", "east" or "west"');
     
 
-def publishDatapack(functionList):
-    pass
+def round_half_up(num):
+    string = str(num)
+    decimal = Decimal(string)
+    return decimal.quantize(Decimal("0"), rounding = ROUND_HALF_UP)
+

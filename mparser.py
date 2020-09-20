@@ -76,8 +76,8 @@ def finishNote(currentTime, dic, notes, tempoList, volume, track, tpb):
 def LoadMidiFile(fileName):
     with mido.MidiFile(fileName) as midifile:
 
-        for i, track in enumerate(midifile.tracks):
-            print("Track {}:{}".format(i, track))
+        #for i, track in enumerate(midifile.tracks):
+        #    print("Track {}:{}".format(i, track))
         
         tempoList = []
         for tk in midifile.tracks:
@@ -95,9 +95,8 @@ def LoadMidiFile(fileName):
                 
         
         parsedNotes = []
-        trackcounter = 0
-        for track in midifile.tracks:
-            trackcounter = trackcounter + 1
+        
+        for trackcounter, track in enumerate(midifile.tracks):
             print(track, ":")
             percussion = False
             volume = 127

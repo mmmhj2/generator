@@ -164,7 +164,10 @@ class Generator:
             #    raise ValueError("Notes are not sorted")
             #deltaTick = round(deltaTime / 0.05)
             
-            startTick = round(i.start * 20)
+            _startTick = round(i.start * 20)
+            startTick = round_half_up(i.start * 20)
+            if(startTick != _startTick):
+                print("Different values:", startTick, _startTick)
             durationTick = round(i.duration / 0.05)
             #print(i.start, i.start * 20, startTick)
 
