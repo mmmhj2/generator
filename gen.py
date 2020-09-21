@@ -186,7 +186,7 @@ class Generator:
         
 
 if __name__ == "__main__":
-    notelist = LoadMidiFile("Only_my_Railgun_-_Animenz_Piano_Sheets.mid")
+    notelist = LoadMidiFile("LEVEL5_-judgelight-.mid")
 
     #if(access("datapack", F_OK)):
     #    rmtree("datapack")
@@ -220,7 +220,7 @@ if __name__ == "__main__":
     if(not access("functions", F_OK)):
         mkdir("functions")
     chdir("functions")
-    g = Generator("omr")
+    g = Generator("lvl")
 
     g.writeInitFunc()
     g.generateTickingFunction()
