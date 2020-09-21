@@ -202,14 +202,17 @@ if __name__ == "__main__":
 
     if(not access("minecraft", F_OK)):
         mkdir("minecraft")
-        chdir("minecraft")
+    chdir("minecraft")
+    if(not access("tags", F_OK)):
         mkdir("tags")
-        chdir("tags")
+    chdir("tags")
+    if(not access("functions", F_OK)):
         mkdir("functions")
-        chdir("functions")
-        with open("tick.json", "w") as fp:
-            print('{"replace":false,"values":["std:ticking"]}', file = fp)
-        chdir("..\..\..")
+    chdir("functions")
+        #with open("tick.json", "w") as fp:
+        #    print('{"replace":false,"values":["std:ticking"]}', file = fp)
+    writeTag("tick", ["std:ticking"])
+    chdir("..\..\..")
 
     if(not access("std", F_OK)):
         mkdir("std")
