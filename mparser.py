@@ -166,7 +166,7 @@ def LoadMidiFile(fileName):
         #    print(i)
         #for i in range(128):
         #    print(i, noteCnt[i])
-        parsedNotes = sorted(parsedNotes, key = lambda notes: notes.start)
+        #parsedNotes = sorted(parsedNotes, key = lambda notes: notes.start)
         return parsedNotes
 
 if __name__ == '__main__':

@@ -3,7 +3,7 @@ from datapack import *
 from mparser import *
 from utils import *
 from math import ceil
-from os import access, F_OK, mkdir, chdir
+from os import access, F_OK, mkdir, chdir, getcwd
 from shutil import rmtree
 
 
@@ -14,7 +14,7 @@ class Generator:
     STRING_TICKING_SCORE_DISABLE = "scoreboard players set @a ticking -1"
     STRING_TICKING_SCORE_TICK = "scoreboard players add @a[scores={ticking=0..}] ticking 1"
 
-    def __init__(self, folder = "msc"):
+    def __init__(self, folder = "msc", datapack = "datapack"):
         if(len(folder) <= 0):
             raise ValueError("Folder name must not be empty")
         
@@ -24,6 +24,7 @@ class Generator:
         self.folder = folder
         self.func_prefix = "music_func_"
         self.namespace = "std"
+        self.datapack = "datapack"
 
         self.PITCH = []
         for i in range(25):
@@ -47,12 +48,6 @@ class Generator:
         self.INSTRUMENT.append("minecraft:block.note_block.basedrum")
         self.INSTRUMENT.append("minecraft:block.note_block.hat")
 
-    def writeInitFunc(self):
-        with open("initialize.mcfunction", "w") as fp:
-            print("scoreboard objectives add ticking dummy", file = fp)
-            print("scoreboard objectives setdisplay sidebar ticking", file = fp)
-            print("scoreboard players set @a ticking -1", file = fp)
-            print("gamerule commandBlockOutput false", file = fp)
 
     def getExecString(self, cmd):
         return "execute positioned ~{} ~{} ~{} run {}".format(self.pX, self.pY, self.pZ, cmd)
@@ -64,15 +59,15 @@ class Generator:
     def getPlaysoundString(self, name, vol, pitch, cond = ""):
         return "playsound {} block @a[{}] ~ ~ ~ {} {}".format(name, cond, vol, pitch)
 
-    def generateTickingFunction(self):
-        with open("ticking.mcfunction", "w") as fp:
-            print(Generator.STRING_TICKING_SCORE_TICK, file = fp)
+
+    def getFullFuncDir(self):
+        return "./" + self.datapack + "/data/" + self.namespace + "/functions/"
 
     def getTickFuncName(self, tick):
         return self.namespace + ":" + self.folder + "/" + self.func_prefix + str(tick)
 
     def getTickFuncFile(self, tick):
-        return self.folder + "/" + self.func_prefix + str(tick) + ".mcfunction"
+        return self.getFullFuncDir() + self.folder + "/" + self.func_prefix + str(tick) + ".mcfunction"
 
 
     def generateTimeline(self, notelist):
@@ -136,7 +131,7 @@ class Generator:
         setblock = self.getSetblockString(delta[0], delta[1], delta[2], "command_block", nbt='Command:"{}", auto:0b'.format(cmd))
         result.append(self.getExecString(setblock))
 
-        filename = self.folder + "_result.mcfunction"
+        filename = self.getFullFuncDir() + self.folder + "_result.mcfunction"
         with open(filename, "w") as fp:
             for entity in result:
                 print(entity, file = fp)
@@ -144,9 +139,10 @@ class Generator:
     def generateFunctions(self, notelist):
 
         # delete original files
-        if(access(self.folder, F_OK)):
-            rmtree(self.folder)
-        mkdir(self.folder)
+        fullFolder = self.getFullFuncDir() + self.folder
+        if(access(fullFolder, F_OK)):
+            rmtree(fullFolder)
+        mkdir(fullFolder)
         
         
         tick = 0
@@ -182,11 +178,30 @@ class Generator:
                 cmd = self.getPlaysoundString(instrument, volume, pitch, cond)
                 print(cmd, file = fp)
             
+    def generateExtra(self, fp):
+        cmds = parseExtra(fp)
+        for tick, cmd in cmds:
+            func = self.getTickFuncFile(tick)
+            with open(func, "a") as fp:
+                print(cmd, file = fp)
 
+    def writeInitFunc(self):
+        funcName = self.getFullFuncDir() + "initialize.mcfunction"
+        with open(funcName, "w") as fp:
+            print("scoreboard objectives add ticking dummy", file = fp)
+            print("scoreboard objectives setdisplay sidebar ticking", file = fp)
+            print("scoreboard players set @a ticking -1", file = fp)
+            print("gamerule commandBlockOutput false", file = fp)
+
+    def generateTickingFunction(self):
+        funcName = self.getFullFuncDir() + "ticking.mcfunction"
+        with open(funcName, "w") as fp:
+            print(Generator.STRING_TICKING_SCORE_TICK, file = fp)
         
 
 if __name__ == "__main__":
     notelist = LoadMidiFile("LEVEL5_-judgelight-.mid")
+    fp = open("exampleExtra.txt", "r")
 
     #if(access("datapack", F_OK)):
     #    rmtree("datapack")
@@ -220,10 +235,14 @@ if __name__ == "__main__":
     if(not access("functions", F_OK)):
         mkdir("functions")
     chdir("functions")
+    chdir("..\..\..\..")
+    print(getcwd())
     g = Generator("lvl")
 
     g.writeInitFunc()
     g.generateTickingFunction()
     g.generateTimeline(notelist)
     g.generateFunctions(notelist)
+    g.generateExtra(fp)
+    fp.close()
     

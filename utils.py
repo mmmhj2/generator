@@ -76,3 +76,29 @@ def round_half_up(num):
     decimal = Decimal(string)
     return decimal.quantize(Decimal("0"), rounding = ROUND_HALF_UP)
 
+def parseExtra(fp):
+
+    result = []
+    
+    for line in fp:
+        line = line.rstrip("\n")
+        if(len(line) <= 0):
+            continue
+        print(line)
+        args = line.split("=", 1)
+        print(args)
+        if(len(args) != 2):
+            raise ValueError("Corrupted file")
+        args[0], args[1] = args[0].strip(), args[1].strip()
+        if not args[0].isnumeric():
+            raise ValueError("Expected a tick number at the beginning of a line")
+        result.append((args[0], args[1]))
+
+    return result
+
+
+if __name__ == "__main__":
+    with open("exampleExtra.txt", "r") as fp:
+        print(parseExtra(fp))
+
+
