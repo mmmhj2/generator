@@ -63,7 +63,7 @@ if __name__ == "__main__":
         exit()
         
     folderName = ""
-    extra = "exampleExtra.txt"
+    extra = ""
     desc = "Auto-generated music datapack"
     
     for opt, arg in opts:
@@ -99,6 +99,7 @@ if __name__ == "__main__":
     if(len(extra) > 0):
         with open(extra, "r") as fp:
             g.generateExtra(fp)
+    print("Press Enter to continue...")
     a = input()
 
 
