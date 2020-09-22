@@ -117,3 +117,4 @@ dmypy.json
 # Results
 datapack/
 *.mid
+midimsg.txt
