@@ -138,7 +138,7 @@ def LoadMidiFile(fileName):
                 notes.append((0,0))
                 
             for msg in track:
-                print(msg, file = fp)
+                #print(msg, file = fp)
                 dic = msg.dict()
                 if dic["type"] == "note_on" and dic["velocity"] > 0:
                     currentTime = currentTime + dic["time"]

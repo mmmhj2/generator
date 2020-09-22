@@ -143,11 +143,7 @@ class Generator:
         if(access(fullFolder, F_OK)):
             rmtree(fullFolder)
         mkdir(fullFolder)
-        
-        
-        tick = 0
-        lastTime = 0
-        
+
         for i in notelist:
             try:
                 nt = i.toMCNote(+12)
@@ -164,8 +160,9 @@ class Generator:
             startTick = round_half_up(i.start * 20)
             if(startTick != _startTick):
                 print("Different values:", startTick, _startTick)
-            durationTick = round(i.duration / 0.05)
-            #print(i.start, i.start * 20, startTick)
+            _durationTick = round(i.duration * 20)
+            durationTick = round_half_up(i.duration * 20)
+            #print(durationTick)
 
             func = self.getTickFuncFile(startTick)
             with open(func, "a") as fp:
@@ -177,6 +174,22 @@ class Generator:
                 
                 cmd = self.getPlaysoundString(instrument, volume, pitch, cond)
                 print(cmd, file = fp)
+
+            if(durationTick >= 10):
+                tickCnt = 3
+                while(tickCnt <= durationTick):
+                    curTick = startTick + tickCnt
+                    func = self.getTickFuncFile(curTick)
+                    with open(func, "a") as fp:
+                        pitch = self.PITCH[nt[0]]
+                        instrument = self.INSTRUMENT[nt[1]]
+                        volume = nt[2]
+                        cond = "scores={ticking=" + str(curTick) + "}"
+
+                        cmd = self.getPlaysoundString(instrument, volume, pitch, cond)
+                        print(cmd, file = fp)
+                        
+                    tickCnt += 3
             
     def generateExtra(self, fp):
         cmds = parseExtra(fp)

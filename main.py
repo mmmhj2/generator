@@ -99,6 +99,6 @@ if __name__ == "__main__":
     if(len(extra) > 0):
         with open(extra, "r") as fp:
             g.generateExtra(fp)
-
+    a = input()
 
 
