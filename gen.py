@@ -76,9 +76,15 @@ class Generator:
 
 
     def generateTimeline(self, notelist):
-        print("This piece lasts for", notelist[-1].start, "seconds")
 
-        lengthTicks = round(notelist[-1].start / 0.05)
+        maxTime = -1
+
+        for note in notelist:
+            maxTime = max(maxTime, note.start)
+        
+        print("This piece lasts for", maxTime, "seconds")
+
+        lengthTicks = round(maxTime * 20)
         loopCnt = ceil(lengthTicks / 2)
         result = []
 
