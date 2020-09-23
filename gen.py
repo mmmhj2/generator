@@ -149,6 +149,8 @@ class Generator:
             rmtree(fullFolder)
         mkdir(fullFolder)
 
+        dicResult = dict()
+
         for i in notelist:
             try:
                 nt = i.toMCNote(+12)
@@ -169,32 +171,47 @@ class Generator:
             durationTick = round_half_up(i.duration * 20)
             #print(durationTick)
 
-            func = self.getTickFuncFile(startTick)
-            with open(func, "a") as fp:
+            #func = self.getTickFuncFile(startTick)
+            #with open(func, "a") as fp:
 
-                pitch = self.PITCH[nt[0]]
-                instrument = self.INSTRUMENT[nt[1]]
-                volume = nt[2]
-                cond = "scores={ticking=" + str(startTick) + "}"
+            pitch = self.PITCH[nt[0]]
+            instrument = self.INSTRUMENT[nt[1]]
+            volume = nt[2]
+            cond = "scores={ticking=" + str(startTick) + "}"
                 
-                cmd = self.getPlaysoundString(instrument, volume, pitch, cond)
-                print(cmd, file = fp)
+            cmd = self.getPlaysoundString(instrument, volume, pitch, cond)
+            #print(cmd, file = fp)
+
+            if not startTick in dicResult:
+                dicResult[startTick] = []
+            dicResult[startTick].append(cmd)
 
             if(durationTick >= self.tupletThd):
                 tickCnt = self.tupletInv
                 while(tickCnt <= durationTick):
                     curTick = startTick + tickCnt
                     func = self.getTickFuncFile(curTick)
-                    with open(func, "a") as fp:
-                        pitch = self.PITCH[nt[0]]
-                        instrument = self.INSTRUMENT[nt[1]]
-                        volume = nt[2] * (self.tupletFactor ** (tickCnt / self.tupletInv))
-                        cond = "scores={ticking=" + str(curTick) + "}"
+                    #with open(func, "a") as fp:
+                    pitch = self.PITCH[nt[0]]
+                    instrument = self.INSTRUMENT[nt[1]]
+                    volume = nt[2] * (self.tupletFactor ** (tickCnt / self.tupletInv))
+                    cond = "scores={ticking=" + str(curTick) + "}"
 
-                        cmd = self.getPlaysoundString(instrument, volume, pitch, cond)
-                        print(cmd, file = fp)
+                    cmd = self.getPlaysoundString(instrument, volume, pitch, cond)
+                    #print(cmd, file = fp)
+
+                    if not curTick in dicResult:
+                        dicResult[curTick] = []
+                    dicResult[curTick].append(cmd)
                         
                     tickCnt += self.tupletInv
+
+
+        for tick, cmds in dicResult.items():
+            func = self.getTickFuncFile(tick)
+            with open(func, "w") as fp:
+                for item in cmds:
+                    print(item, file = fp)
             
     def generateExtra(self, fp):
         cmds = parseExtra(fp)
