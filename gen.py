@@ -14,7 +14,7 @@ class Generator:
     STRING_TICKING_SCORE_DISABLE = "scoreboard players set @a ticking -1"
     STRING_TICKING_SCORE_TICK = "scoreboard players add @a[scores={ticking=0..}] ticking 1"
 
-    def __init__(self, folder = "msc", datapack = "datapack"):
+    def __init__(self, folder = "msc", funcPrefix = "music_func_", namespace = "std", datapack = "datapack", tupletThreshold = 10, tupletInterval = 3, tupletFactor = 0.8):
         if(len(folder) <= 0):
             raise ValueError("Folder name must not be empty")
         
@@ -22,9 +22,12 @@ class Generator:
         self.facing = "south"
         self.facing_clockwise = RotateClockwise(self.facing)
         self.folder = folder
-        self.func_prefix = "music_func_"
-        self.namespace = "std"
-        self.datapack = "datapack"
+        self.func_prefix = funcPrefix if len(funcPrefix) > 0 else "music_func_"
+        self.namespace = namespace if len(namespace) > 0 else "std"
+        self.datapack = datapack if len(datapack) > 0 else "datapack"
+        self.tupletThd = tupletThreshold
+        self.tupletInv = tupletInterval
+        self.tupletFactor = tupletFactor
 
         self.PITCH = []
         for i in range(25):
@@ -175,21 +178,21 @@ class Generator:
                 cmd = self.getPlaysoundString(instrument, volume, pitch, cond)
                 print(cmd, file = fp)
 
-            if(durationTick >= 10):
-                tickCnt = 3
+            if(durationTick >= self.tupletThd):
+                tickCnt = self.tupletInv
                 while(tickCnt <= durationTick):
                     curTick = startTick + tickCnt
                     func = self.getTickFuncFile(curTick)
                     with open(func, "a") as fp:
                         pitch = self.PITCH[nt[0]]
                         instrument = self.INSTRUMENT[nt[1]]
-                        volume = nt[2]
+                        volume = nt[2] * (self.tupletFactor ** (tickCnt / self.tupletInv))
                         cond = "scores={ticking=" + str(curTick) + "}"
 
                         cmd = self.getPlaysoundString(instrument, volume, pitch, cond)
                         print(cmd, file = fp)
                         
-                    tickCnt += 3
+                    tickCnt += self.tupletInv
             
     def generateExtra(self, fp):
         cmds = parseExtra(fp)
