@@ -60,7 +60,9 @@ class Generator:
         return pat1 + "{" + nbt + "} replace"
 
     def getPlaysoundString(self, name, vol, pitch, cond = ""):
-        return "playsound {} block @a[{}] ~ ~ ~ {} {}".format(name, cond, vol, pitch)
+        #if(vol < 0 or vol > 1):
+        #    raise ValueError("Volume is " + str(vol))
+        return "execute as @a[{}] at @s run playsound {} block @s ~ ~ ~ {} {}".format(cond, name, vol / 100, pitch)
 
 
     def getFullFuncDir(self):
@@ -217,7 +219,7 @@ class Generator:
 
 if __name__ == "__main__":
     notelist = LoadMidiFile("LEVEL5_-judgelight-.mid")
-    fp = open("exampleExtra.txt", "r")
+    #fp = open("exampleExtra.txt", "r")
 
     #if(access("datapack", F_OK)):
     #    rmtree("datapack")
@@ -259,6 +261,6 @@ if __name__ == "__main__":
     g.generateTickingFunction()
     g.generateTimeline(notelist)
     g.generateFunctions(notelist)
-    g.generateExtra(fp)
-    fp.close()
+    #g.generateExtra(fp)
+    #fp.close()
     
