@@ -33,6 +33,7 @@ def prepare(desc):
         #with open("tick.json", "w") as fp:
         #    print('{"replace":false,"values":["std:ticking"]}', file = fp)
     writeTag("tick", ["std:ticking"])
+    writeTag("load", ["std:initialize"])
     chdir("..\..\..")
 
 def generateFolderName(midiName):
