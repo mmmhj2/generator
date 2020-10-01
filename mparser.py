@@ -46,32 +46,14 @@ def CalcPrefixTime(tempoList, tpb):
 
 def GetAccTime(tick, tempoList, tpb, prefixSum):
     ret = 0
-    '''
-    i = 0
-    while(i <= len(tempoList) - 1):
-        tempo = tempoList[i]
-        if(i == len(tempoList) - 1 or tempoList[i+1][1] > tick):
-            #ret = ret + (tick - tempoList[i][1]) * tempoList[i][0]
-            ret += mido.tick2second(tick - tempoList[i][1], tpb, tempoList[i][0])
-            #print(ret, tick, tempoList[i][1], tempoList[i][0])
-            break
-        #ret = ret + (tempoList[i + 1][1] - tempoList[i][1]) * tempoList[i][0]
-        ret += mido.tick2second(tempoList[i+1][1] - tempoList[i][1], tpb, tempoList[i][0])
-        i = i + 1
-    '''
 
     if(not hasattr(GetAccTime, "tickTable")):
         GetAccTime.tickTable = []
         for i in tempoList:
             GetAccTime.tickTable.append(i[1])
     
-
     index = bisect(GetAccTime.tickTable, tick)
-
-    #print(neoList, index)
     ret = prefixSum[index - 1] + mido.tick2second(tick - tempoList[index-1][1], tpb, tempoList[index-1][0])
-    
-    #print("Time(", tick,"):", ret)
     return ret
 
 def finishNote(currentTime, dic, notes, tempoList, volume, track, tpb, prefixSum):
@@ -79,16 +61,11 @@ def finishNote(currentTime, dic, notes, tempoList, volume, track, tpb, prefixSum
     tim = GetAccTime(notes[nt][0], tempoList, tpb, prefixSum)
     result = note(nt, GetAccTime(currentTime, tempoList, tpb, prefixSum) - tim, tim, (notes[nt][1] / 127) * (volume / 127) * 100, track)
     notes[nt] = (0,0)
-    #print("note begins at", tim, "ends at", currentTime)
     return result
     
 
 def LoadMidiFile(fileName):
-    with mido.MidiFile(fileName) as midifile:
-
-        #for i, track in enumerate(midifile.tracks):
-        #    print("Track {}:{}".format(i, track))
-        
+    with mido.MidiFile(fileName) as midifile:  
         tempoList = []
         for tk in midifile.tracks:
             currentTime = 0
@@ -99,8 +76,6 @@ def LoadMidiFile(fileName):
                     print(msg)
                     if msg.dict()["type"] == "set_tempo":
                         dic = msg.dict()
-                        #currentTime = currentTime + dic["time"]
-                        #_tps = mido.tick2second(1, midifile.ticks_per_beat, dic['tempo'])
                         tempoList.append((dic['tempo'], currentTime))
                         print("Change Tempo at", currentTime)
         if(len(tempoList) <= 0):
@@ -129,7 +104,6 @@ def LoadMidiFile(fileName):
                         parsedNotes.append(finishNote(currentTime, dic, notes, tempoList, volume, trackcounter, midifile.ticks_per_beat, prefixSum))
                         notes[dic["note"]] = (0, 0)
                     notes[dic["note"]] = (currentTime, dic["velocity"])
-                    #noteCnt[dic["note"]] = noteCnt[dic["note"]] + 1
                         
                 elif dic["type"] == "note_off" or (dic["type"] == "note_on" and dic["velocity"] == 0):
                     currentTime = currentTime + dic["time"]
@@ -142,14 +116,6 @@ def LoadMidiFile(fileName):
                             volume = dic["value"]
                     else:
                         print(msg)
-
-        #fp.close()
-                    
-        #for i in parsedNotes:
-        #    print(i)
-        #for i in range(128):
-        #    print(i, noteCnt[i])
-        #parsedNotes = sorted(parsedNotes, key = lambda notes: notes.start)
         return parsedNotes
 
 if __name__ == '__main__':

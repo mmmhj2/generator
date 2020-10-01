@@ -33,26 +33,6 @@ class Generator:
         for i in range(25):
             self.PITCH.append(2 ** (-1 + i / 12))
 
-        '''
-        self.INSTRUMENT = []
-        self.INSTRUMENT.append("minecraft:block.note_block.bass")           # F#1-F#3
-        self.INSTRUMENT.append("minecraft:block.note_block.didgeridoo")
-        self.INSTRUMENT.append("minecraft:block.note_block.guitar")         # F#2-F#4
-        self.INSTRUMENT.append("minecraft:block.note_block.iron_xylophone") # F#3-F#5
-        self.INSTRUMENT.append("minecraft:block.note_block.bit")
-        self.INSTRUMENT.append("minecraft:block.note_block.banjo")
-        self.INSTRUMENT.append("minecraft:block.note_block.pling")
-        self.INSTRUMENT.append("minecraft:block.note_block.harp")
-        self.INSTRUMENT.append("minecraft:block.note_block.flute")          # F#4-F#6
-        self.INSTRUMENT.append("minecraft:block.note_block.cow_bell")
-        self.INSTRUMENT.append("minecraft:block.note_block.bell")           # F#5-F#7
-        self.INSTRUMENT.append("minecraft:block.note_block.chime")
-        self.INSTRUMENT.append("minecraft:block.note_block.xylophone")
-        self.INSTRUMENT.append("minecraft:block.note_block.snare")
-        self.INSTRUMENT.append("minecraft:block.note_block.basedrum")
-        self.INSTRUMENT.append("minecraft:block.note_block.hat")
-        '''
-
 
     def getExecString(self, cmd):
         return "execute positioned ~{} ~{} ~{} run {}".format(self.pX, self.pY, self.pZ, cmd)
@@ -169,21 +149,12 @@ class Generator:
                 print(e)
                 continue
 
-            #deltaTime = i.start - lastTime
-            #if(deltaTime < 0):
-            #    raise ValueError("Notes are not sorted")
-            #deltaTick = round(deltaTime / 0.05)
-            
             _startTick = round(i.start * 20)
             startTick = round_half_up(i.start * 20)
             if(startTick != _startTick):
                 print("Different values:", startTick, _startTick)
             _durationTick = round(i.duration * 20)
             durationTick = round_half_up(i.duration * 20)
-            #print(durationTick)
-
-            #func = self.getTickFuncFile(startTick)
-            #with open(func, "a") as fp:
 
             pitch = self.PITCH[nt[0]]
             instrument = nt[1]
@@ -191,8 +162,7 @@ class Generator:
             cond = "scores={ticking=" + str(startTick) + "}"
                 
             cmd = self.getPlaysoundString(instrument, volume, pitch, cond)
-            #print(cmd, file = fp)
-
+            
             if not startTick in dicResult:
                 dicResult[startTick] = []
             dicResult[startTick].append(cmd)
@@ -247,10 +217,6 @@ class Generator:
 
 if __name__ == "__main__":
     notelist = LoadMidiFile("LEVEL5_-judgelight-.mid")
-    #fp = open("exampleExtra.txt", "r")
-
-    #if(access("datapack", F_OK)):
-    #    rmtree("datapack")
 
     if(not access("datapack", F_OK)):
         mkdir("datapack")
@@ -270,8 +236,6 @@ if __name__ == "__main__":
     if(not access("functions", F_OK)):
         mkdir("functions")
     chdir("functions")
-        #with open("tick.json", "w") as fp:
-        #    print('{"replace":false,"values":["std:ticking"]}', file = fp)
     writeTag("tick", ["std:ticking"])
     chdir("..\..\..")
 
@@ -289,6 +253,5 @@ if __name__ == "__main__":
     g.generateTickingFunction()
     g.generateTimeline(notelist)
     g.generateFunctions(notelist)
-    #g.generateExtra(fp)
-    #fp.close()
+
     
