@@ -32,7 +32,8 @@ class Generator:
         self.PITCH = []
         for i in range(25):
             self.PITCH.append(2 ** (-1 + i / 12))
-            
+
+        '''
         self.INSTRUMENT = []
         self.INSTRUMENT.append("minecraft:block.note_block.bass")           # F#1-F#3
         self.INSTRUMENT.append("minecraft:block.note_block.didgeridoo")
@@ -50,6 +51,7 @@ class Generator:
         self.INSTRUMENT.append("minecraft:block.note_block.snare")
         self.INSTRUMENT.append("minecraft:block.note_block.basedrum")
         self.INSTRUMENT.append("minecraft:block.note_block.hat")
+        '''
 
 
     def getExecString(self, cmd):
@@ -184,7 +186,7 @@ class Generator:
             #with open(func, "a") as fp:
 
             pitch = self.PITCH[nt[0]]
-            instrument = self.INSTRUMENT[nt[1]]
+            instrument = nt[1]
             volume = nt[2]
             cond = "scores={ticking=" + str(startTick) + "}"
                 
@@ -202,7 +204,7 @@ class Generator:
                     func = self.getTickFuncFile(curTick)
                     #with open(func, "a") as fp:
                     pitch = self.PITCH[nt[0]]
-                    instrument = self.INSTRUMENT[nt[1]]
+                    instrument = nt[1]
                     volume = nt[2] * (self.tupletFactor ** (tickCnt / self.tupletInv))
                     cond = "scores={ticking=" + str(curTick) + "}"
 

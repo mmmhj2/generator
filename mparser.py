@@ -12,40 +12,23 @@ class note:
         self.start = start
         self.volume = volume
         self.track = track
+        self.instru = [["minecraft:block.note_block.bass"],["minecraft:block.note_block.harp"],["minecraft:block.note_block.chime"]]
 
     def __str__(self):
         return "NOTE {} DUR {} STR {}".format(self.note, self.duration, self.start)
 
-    def toMCNote(self, offset = 0):
+    def toMCNote(self, offset = 0, instruIndex = 0):
         if self.F_1 - offset <= self.note and self.note <= self.F_3 - offset:
-            '''
-            if(self.track % 2 == 1):
-                return (self.note - (42 - offset), 0, self.volume)   #minecraft:block.note_block.bass
-            else:
-                return (self.note - (42 - offset), 1, self.volume)   #minecraft:block.note_block.didgeridoo
-            '''
-            return (self.note - (42 - offset), 0, self.volume)
+            return (self.note - (42 - offset), self.instru[0][instruIndex], self.volume)
         if self.F_3 - offset <= self.note and self.note <= self.F_5 - offset:
-            '''
-            if(self.track % 2 == 1):
-                return (self.note - (66 - offset), 7, self.volume)   #minecraft:block.note_block.harp
-            else:
-                return (self.note - (66 - offset), 3, self.volume)   #minecraft:block.note_block.iron_xylophone
-            '''
-            return (self.note - (66 - offset), 7, self.volume)
+            return (self.note - (66 - offset), self.instru[1][instruIndex], self.volume)
         if self.F_5 - offset <= self.note and self.note <= self.F_7 - offset:
-            '''
-            if(self.track % 2 == 1):
-                return (self.note - (90 - offset), 12, self.volume)  #minecraft:block.note_block.chime
-            else:
-                return (self.note - (90 - offset), 13, self.volume)  #minecraft:block.note_block.xylophone
-            '''
-            return (self.note - (90 - offset), 12, self.volume)
+            return (self.note - (90 - offset), self.instru[2][instruIndex], self.volume)
 
         if(self.note + offset <= self.F_1):
-            return (0,0,self.volume)
+            return (0,self.instru[0][instruIndex],self.volume)
         if(self.note + offset >= self.F_7):
-            return (24,12,self.volume)
+            return (24,self.instru[2][instruIndex],self.volume)
         
         raise ValueError("Unexpected value of note : {0}({1} modified)".format(self.note, self.note + offset))
 
@@ -126,10 +109,10 @@ def LoadMidiFile(fileName):
         prefixSum = CalcPrefixTime(tempoList, midifile.ticks_per_beat)
         parsedNotes = []
 
-        fp = open("midimsg.txt", "w")
+        #fp = open("midimsg.txt", "w")
         
         for trackcounter, track in enumerate(midifile.tracks):
-            print(track, ":", file = fp)
+            #print(track, ":", file = fp)
             percussion = False
             volume = 127
             currentTime = 0
@@ -160,7 +143,7 @@ def LoadMidiFile(fileName):
                     else:
                         print(msg)
 
-        fp.close()
+        #fp.close()
                     
         #for i in parsedNotes:
         #    print(i)
