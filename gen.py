@@ -42,8 +42,6 @@ class Generator:
         return pat1 + "{" + nbt + "} replace"
 
     def getPlaysoundString(self, name, vol, pitch, cond = ""):
-        #if(vol < 0 or vol > 1):
-        #    raise ValueError("Volume is " + str(vol))
         return "execute as @a[{}] at @s run playsound {} block @s ~ ~ ~ {} {}".format(cond, name, vol / 100, pitch)
 
 
@@ -149,18 +147,14 @@ class Generator:
                 print(e)
                 continue
 
-            _startTick = round(i.start * 20)
             startTick = round_half_up(i.start * 20)
-            if(startTick != _startTick):
-                print("Different values:", startTick, _startTick)
-            _durationTick = round(i.duration * 20)
             durationTick = round_half_up(i.duration * 20)
 
             pitch = self.PITCH[nt[0]]
             instrument = nt[1]
             volume = nt[2]
             cond = "scores={ticking=" + str(startTick) + "}"
-                
+            
             cmd = self.getPlaysoundString(instrument, volume, pitch, cond)
             
             if not startTick in dicResult:
@@ -177,7 +171,7 @@ class Generator:
                     instrument = nt[1]
                     volume = nt[2] * (self.tupletFactor ** (tickCnt / self.tupletInv))
                     cond = "scores={ticking=" + str(curTick) + "}"
-
+                    
                     cmd = self.getPlaysoundString(instrument, volume, pitch, cond)
                     #print(cmd, file = fp)
 

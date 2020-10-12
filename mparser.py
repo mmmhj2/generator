@@ -40,7 +40,6 @@ def CalcPrefixTime(tempoList, tpb):
         if(index > 0):
             prefix[index] = prefix[index - 1]
             prefix[index] += mido.tick2second(tempo[1] - tempoList[index-1][1], tpb, tempoList[index-1][0])
-    print("Prefix Sum:", prefix)
     return prefix
         
 
@@ -73,18 +72,14 @@ def LoadMidiFile(fileName):
                 if "time" in msg.dict():
                     currentTime += msg.dict()["time"]
                 if msg.is_meta:
-                    print(msg)
                     if msg.dict()["type"] == "set_tempo":
                         dic = msg.dict()
                         tempoList.append((dic['tempo'], currentTime))
-                        print("Change Tempo at", currentTime)
         if(len(tempoList) <= 0):
             raise ValueError("This MIDI file does not designate tempo")
                 
         prefixSum = CalcPrefixTime(tempoList, midifile.ticks_per_beat)
         parsedNotes = []
-
-        #fp = open("midimsg.txt", "w")
         
         for trackcounter, track in enumerate(midifile.tracks):
             #print(track, ":", file = fp)
@@ -96,7 +91,6 @@ def LoadMidiFile(fileName):
                 notes.append((0,0))
                 
             for msg in track:
-                #print(msg, file = fp)
                 dic = msg.dict()
                 if dic["type"] == "note_on" and dic["velocity"] > 0:
                     currentTime = currentTime + dic["time"]
@@ -115,7 +109,7 @@ def LoadMidiFile(fileName):
                         if(dic["control"] == 7):            # volume
                             volume = dic["value"]
                     else:
-                        print(msg)
+                        pass
         return parsedNotes
 
 if __name__ == '__main__':
