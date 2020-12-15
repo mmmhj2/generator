@@ -3,7 +3,7 @@ from datapack import *
 from mparser import *
 from utils import *
 from math import ceil
-from os import access, F_OK, mkdir, chdir
+from os import access, F_OK, mkdir, chdir, getcwd
 from shutil import rmtree
 
 
@@ -14,7 +14,7 @@ class Generator:
     STRING_TICKING_SCORE_DISABLE = "scoreboard players set @a ticking -1"
     STRING_TICKING_SCORE_TICK = "scoreboard players add @a[scores={ticking=0..}] ticking 1"
 
-    def __init__(self, folder = "msc"):
+    def __init__(self, folder = "msc", funcPrefix = "music_func_", namespace = "std", datapack = "datapack", tupletThreshold = 10, tupletInterval = 3, tupletFactor = 0.8):
         if(len(folder) <= 0):
             raise ValueError("Folder name must not be empty")
         
@@ -22,37 +22,17 @@ class Generator:
         self.facing = "south"
         self.facing_clockwise = RotateClockwise(self.facing)
         self.folder = folder
-        self.func_prefix = "music_func_"
-        self.namespace = "std"
+        self.func_prefix = funcPrefix if len(funcPrefix) > 0 else "music_func_"
+        self.namespace = namespace if len(namespace) > 0 else "std"
+        self.datapack = datapack if len(datapack) > 0 else "datapack"
+        self.tupletThd = tupletThreshold
+        self.tupletInv = tupletInterval
+        self.tupletFactor = tupletFactor
 
         self.PITCH = []
         for i in range(25):
             self.PITCH.append(2 ** (-1 + i / 12))
-            
-        self.INSTRUMENT = []
-        self.INSTRUMENT.append("minecraft:block.note_block.bass")           # F#1-F#3
-        self.INSTRUMENT.append("minecraft:block.note_block.didgeridoo")
-        self.INSTRUMENT.append("minecraft:block.note_block.guitar")         # F#2-F#4
-        self.INSTRUMENT.append("minecraft:block.note_block.iron_xylophone") # F#3-F#5
-        self.INSTRUMENT.append("minecraft:block.note_block.bit")
-        self.INSTRUMENT.append("minecraft:block.note_block.banjo")
-        self.INSTRUMENT.append("minecraft:block.note_block.pling")
-        self.INSTRUMENT.append("minecraft:block.note_block.harp")
-        self.INSTRUMENT.append("minecraft:block.note_block.flute")          # F#4-F#6
-        self.INSTRUMENT.append("minecraft:block.note_block.cow_bell")
-        self.INSTRUMENT.append("minecraft:block.note_block.bell")           # F#5-F#7
-        self.INSTRUMENT.append("minecraft:block.note_block.chime")
-        self.INSTRUMENT.append("minecraft:block.note_block.xylophone")
-        self.INSTRUMENT.append("minecraft:block.note_block.snare")
-        self.INSTRUMENT.append("minecraft:block.note_block.basedrum")
-        self.INSTRUMENT.append("minecraft:block.note_block.hat")
 
-    def writeInitFunc(self):
-        with open("initialize.mcfunction", "w") as fp:
-            print("scoreboard objectives add ticking dummy", file = fp)
-            print("scoreboard objectives setdisplay sidebar ticking", file = fp)
-            print("scoreboard players set @a ticking -1", file = fp)
-            print("gamerule commandBlockOutput false", file = fp)
 
     def getExecString(self, cmd):
         return "execute positioned ~{} ~{} ~{} run {}".format(self.pX, self.pY, self.pZ, cmd)
@@ -62,23 +42,32 @@ class Generator:
         return pat1 + "{" + nbt + "} replace"
 
     def getPlaysoundString(self, name, vol, pitch, cond = ""):
-        return "playsound {} block @a[{}] ~ ~ ~ {} {}".format(name, cond, vol, pitch)
+        return "execute as @a[{}] at @s run playsound {} block @s ~ ~ ~ {} {}".format(cond, name, vol / 100, pitch)
 
-    def generateTickingFunction(self):
-        with open("ticking.mcfunction", "w") as fp:
-            print(Generator.STRING_TICKING_SCORE_TICK, file = fp)
+
+    def getFullFuncDir(self):
+        return "./" + self.datapack + "/data/" + self.namespace + "/functions/"
 
     def getTickFuncName(self, tick):
         return self.namespace + ":" + self.folder + "/" + self.func_prefix + str(tick)
 
     def getTickFuncFile(self, tick):
-        return self.folder + "/" + self.func_prefix + str(tick) + ".mcfunction"
+        return self.getFullFuncDir() + self.folder + "/" + self.func_prefix + str(tick) + ".mcfunction"
 
 
     def generateTimeline(self, notelist):
-        print("This piece lasts for", notelist[-1].start, "seconds")
 
-        lengthTicks = round(notelist[-1].start / 0.05)
+        maxTime = -1
+        maxDur = -1
+
+        for note in notelist:
+            maxTime = max(maxTime, note.start)
+            if(maxTime == note.start):
+                maxDur = max(maxDur, note.duration)
+        
+        print("This piece lasts for", maxTime, "seconds")
+
+        lengthTicks = round((maxTime + maxDur) * 20)
         loopCnt = ceil(lengthTicks / 2)
         result = []
 
@@ -136,7 +125,7 @@ class Generator:
         setblock = self.getSetblockString(delta[0], delta[1], delta[2], "command_block", nbt='Command:"{}", auto:0b'.format(cmd))
         result.append(self.getExecString(setblock))
 
-        filename = self.folder + "_result.mcfunction"
+        filename = self.getFullFuncDir() + self.folder + "_result.mcfunction"
         with open(filename, "w") as fp:
             for entity in result:
                 print(entity, file = fp)
@@ -144,14 +133,13 @@ class Generator:
     def generateFunctions(self, notelist):
 
         # delete original files
-        if(access(self.folder, F_OK)):
-            rmtree(self.folder)
-        mkdir(self.folder)
-        
-        
-        tick = 0
-        lastTime = 0
-        
+        fullFolder = self.getFullFuncDir() + self.folder
+        if(access(fullFolder, F_OK)):
+            rmtree(fullFolder)
+        mkdir(fullFolder)
+
+        dicResult = dict()
+
         for i in notelist:
             try:
                 nt = i.toMCNote(+12)
@@ -159,37 +147,70 @@ class Generator:
                 print(e)
                 continue
 
-            #deltaTime = i.start - lastTime
-            #if(deltaTime < 0):
-            #    raise ValueError("Notes are not sorted")
-            #deltaTick = round(deltaTime / 0.05)
-            
-            _startTick = round(i.start * 20)
             startTick = round_half_up(i.start * 20)
-            if(startTick != _startTick):
-                print("Different values:", startTick, _startTick)
-            durationTick = round(i.duration / 0.05)
-            #print(i.start, i.start * 20, startTick)
+            durationTick = round_half_up(i.duration * 20)
 
-            func = self.getTickFuncFile(startTick)
-            with open(func, "a") as fp:
-
-                pitch = self.PITCH[nt[0]]
-                instrument = self.INSTRUMENT[nt[1]]
-                volume = nt[2]
-                cond = "scores={ticking=" + str(startTick) + "}"
-                
-                cmd = self.getPlaysoundString(instrument, volume, pitch, cond)
-                print(cmd, file = fp)
+            pitch = self.PITCH[nt[0]]
+            instrument = nt[1]
+            volume = nt[2]
+            cond = "scores={ticking=" + str(startTick) + "}"
             
+            cmd = self.getPlaysoundString(instrument, volume, pitch, cond)
+            
+            if not startTick in dicResult:
+                dicResult[startTick] = []
+            dicResult[startTick].append(cmd)
 
+            if(durationTick >= self.tupletThd):
+                tickCnt = self.tupletInv
+                while(tickCnt <= durationTick):
+                    curTick = startTick + tickCnt
+                    func = self.getTickFuncFile(curTick)
+                    #with open(func, "a") as fp:
+                    pitch = self.PITCH[nt[0]]
+                    instrument = nt[1]
+                    volume = nt[2] * (self.tupletFactor ** (tickCnt / self.tupletInv))
+                    cond = "scores={ticking=" + str(curTick) + "}"
+                    
+                    cmd = self.getPlaysoundString(instrument, volume, pitch, cond)
+                    #print(cmd, file = fp)
+
+                    if not curTick in dicResult:
+                        dicResult[curTick] = []
+                    dicResult[curTick].append(cmd)
+                        
+                    tickCnt += self.tupletInv
+
+
+        for tick, cmds in dicResult.items():
+            func = self.getTickFuncFile(tick)
+            with open(func, "w") as fp:
+                for item in cmds:
+                    print(item, file = fp)
+            
+    def generateExtra(self, fp):
+        cmds = parseExtra(fp)
+        for tick, cmd in cmds:
+            func = self.getTickFuncFile(tick)
+            with open(func, "a") as fp:
+                print(cmd, file = fp)
+
+    def writeInitFunc(self):
+        funcName = self.getFullFuncDir() + "initialize.mcfunction"
+        with open(funcName, "w") as fp:
+            print("scoreboard objectives add ticking dummy", file = fp)
+            print("scoreboard objectives setdisplay sidebar ticking", file = fp)
+            print("scoreboard players set @a ticking -1", file = fp)
+            print("gamerule commandBlockOutput false", file = fp)
+
+    def generateTickingFunction(self):
+        funcName = self.getFullFuncDir() + "ticking.mcfunction"
+        with open(funcName, "w") as fp:
+            print(Generator.STRING_TICKING_SCORE_TICK, file = fp)
         
 
 if __name__ == "__main__":
-    notelist = LoadMidiFile("Only_my_Railgun_-_Animenz_Piano_Sheets.mid")
-
-    #if(access("datapack", F_OK)):
-    #    rmtree("datapack")
+    notelist = LoadMidiFile("LEVEL5_-judgelight-.mid")
 
     if(not access("datapack", F_OK)):
         mkdir("datapack")
@@ -202,14 +223,15 @@ if __name__ == "__main__":
 
     if(not access("minecraft", F_OK)):
         mkdir("minecraft")
-        chdir("minecraft")
+    chdir("minecraft")
+    if(not access("tags", F_OK)):
         mkdir("tags")
-        chdir("tags")
+    chdir("tags")
+    if(not access("functions", F_OK)):
         mkdir("functions")
-        chdir("functions")
-        with open("tick.json", "w") as fp:
-            print('{"replace":false,"values":["std:ticking"]}', file = fp)
-        chdir("..\..\..")
+    chdir("functions")
+    writeTag("tick", ["std:ticking"])
+    chdir("..\..\..")
 
     if(not access("std", F_OK)):
         mkdir("std")
@@ -217,10 +239,13 @@ if __name__ == "__main__":
     if(not access("functions", F_OK)):
         mkdir("functions")
     chdir("functions")
-    g = Generator("omr")
+    chdir("..\..\..\..")
+    print(getcwd())
+    g = Generator("lvl")
 
     g.writeInitFunc()
     g.generateTickingFunction()
     g.generateTimeline(notelist)
     g.generateFunctions(notelist)
+
     
